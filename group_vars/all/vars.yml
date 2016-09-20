@@ -1,0 +1,6 @@
+---
+
+smbcreds: /home/pi/.smbcredentials
+
+smb_user: "{{ vault_smb_user }}"
+smb_pass: "{{ vault_smb_pass }}"

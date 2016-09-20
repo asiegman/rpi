@@ -1,0 +1,66 @@
+---
+
+- name: Configure Pi Plex
+  hosts: 10.0.1.47
+  remote_user: pi
+  become: yes
+  tasks:
+    - name: apt https transport
+      apt:
+        package: apt-transport-https
+        state: present
+
+    - name: Add plex apt key
+      apt_key:
+        url: https://dev2day.de/pms/dev2day-pms.gpg.key
+        state: present
+
+    - name: plex repository
+      apt_repository:
+        repo: deb https://dev2day.de/pms/ jessie main
+        filename: plex
+        state: present
+        update_cache: yes
+
+    - name: plexmediaserver package
+      apt:
+        package: plexmediaserver
+        state: latest
+
+    - name: Setup cifs to mount remote samba shares
+      apt:
+        package: cifs-utils
+        state: latest
+
+    - name: Samba credentials
+      template:
+        src: smbcredentials.j2
+        dest: "{{ smbcreds }}"
+        owner: pi
+        group: pi
+        mode: 0600
+
+    - name: Setup fileserver mount directories
+      file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+        - /mnt/minibuntu
+        - /mnt/minibuntu/torrents
+        - /mnt/minibuntu/whs
+
+    - name: Setup first library mount
+      mount:
+        fstype: cifs
+        name: /mnt/minibuntu/torrents
+        state: mounted
+        src: //10.0.1.18/torrents
+        opts: "credentials={{smbcreds}},iocharset=utf8,sec=ntlm"
+
+    - name: Setup second library mount
+      mount:
+        fstype: cifs
+        name: /mnt/minibuntu/whs
+        state: mounted
+        src: //10.0.1.18/whs
+        opts: "credentials={{smbcreds}},iocharset=utf8,sec=ntlm"
